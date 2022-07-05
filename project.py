@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
-import pyler
+import plyer
 
 # Configuration for parser
 parser = argparse.ArgumentParser(
@@ -38,7 +38,6 @@ parser.add_argument(
     help='Specify a locale for correctly formatting price'
 )
 
-args = parser.parse_args()
 
 class Scrapper:
     def __init__(self):
@@ -47,15 +46,17 @@ class Scrapper:
         options.page_load_strategy = 'eager'
 
         # Does not require browser driver to be downloaded beforehand
-        service = ChromeService(executable_path=ChromeDriverManager().install())
+        service = ChromeService(
+            executable_path=ChromeDriverManager().install()
+        )
 
         # Creates instance of Chrome webdriver
         self.driver = webdriver.Chrome(service=service, options=options)
-        
+
     def get_url(self, url: str) -> None:
         """ Navigate to provided url """
         self.driver.get(url)
-    
+
     def find_element_text(self, xpath: str) -> str:
         """ Given a X-Path to a element, return inner text of the element """
         try:
@@ -69,27 +70,33 @@ class Scrapper:
         """ Closes the webdriver """
         self.driver.close()
 
+
 def main():
+    args = parser.parse_args()
     page_title, actual_price = scrap_element(args.url, args.xpath)
     if is_price_reduced(args.target_price, actual_price):
-        pyler.notification.notify(
+        msg = (
+            f'The price of the item {page_title} '
+            f'has gone down to {actual_price}'
+        )
+        plyer.notification.notify(
             title='A price has been reduced',
-            message=f'The price of the item {page_title} has gone down to {actual_price}',
+            message=msg,
         )
 
 
-def convert_string_to_float(str: str, locale_setting: str=args.locale) -> float:
+def convert_string_to_float(str: str, locale_setting: str = 'en_US.UTF-8') -> float:
     """
     Given a price like string, convert to float
 
-    
+
     Considers locale when converting price like string, defaults to en_US
     """
 
     # If all character are digits, just return as float
     if str.isdigit():
         return float(str)
-    
+
     # Searches for digits, with or without dot and comma
     match = re.search(r'([\d,.]+)', str)
     # If not digits are found, raise exception
@@ -108,6 +115,7 @@ def convert_string_to_float(str: str, locale_setting: str=args.locale) -> float:
         sys.exit('Invalid price format was used')
 
     return float(result_value)
+
 
 def scrap_element(url: str, xpath: str) -> tuple[str, float]:
     """ Returns tuple (page's title, X-Path's target element's inner html) """
@@ -128,10 +136,9 @@ def scrap_element(url: str, xpath: str) -> tuple[str, float]:
 
     return (title, convert_string_to_float(price))
 
+
 def is_price_reduced(target_price: float, actual_price: float) -> bool:
     """Returns True if target price is less than target, False otherwise"""
-    if actual_price == target_price or actual_price > target_price:
-        raise ValueError('Target price has to be lower than actual price')
     if actual_price < target_price:
         return True
     return False
