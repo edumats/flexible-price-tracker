@@ -3,6 +3,7 @@ from email import message
 import locale
 import re
 import sys
+from unittest.mock import DEFAULT
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -37,6 +38,8 @@ parser.add_argument(
     default='en_US',
     help='Specify a locale for correctly formatting price'
 )
+
+DEFAULT_LOCALE = 'en_US.UTF-8'
 
 
 class Scrapper:
@@ -74,7 +77,9 @@ class Scrapper:
 def main():
     args = parser.parse_args()
     page_title, actual_price = scrap_element(args.url, args.xpath)
+    print(actual_price)
     if is_price_reduced(args.target_price, actual_price):
+        print('Price lower than target price')
         msg = (
             f'The price of the item {page_title} '
             f'has gone down to {actual_price}'
@@ -83,9 +88,11 @@ def main():
             title='A price has been reduced',
             message=msg,
         )
+    else:
+        print('Price higher than target price')
 
 
-def convert_string_to_float(str: str, locale_setting: str = 'en_US.UTF-8') -> float:
+def convert_string_to_float(str: str, locale_setting: str = DEFAULT_LOCALE) -> float:
     """
     Given a price like string, convert to float
 
