@@ -1,9 +1,7 @@
 import argparse
-from email import message
 import locale
 import re
 import sys
-from unittest.mock import DEFAULT
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -35,11 +33,9 @@ parser.add_argument(
     '-l',
     '--locale',
     type=str,
-    default='en_US',
+    default='en_US.UTF-8',
     help='Specify a locale for correctly formatting price'
 )
-
-DEFAULT_LOCALE = 'en_US.UTF-8'
 
 
 class Scrapper:
@@ -76,13 +72,13 @@ class Scrapper:
 
 def main():
     args = parser.parse_args()
-    page_title, actual_price = scrap_element(args.url, args.xpath)
-    print(actual_price)
-    if is_price_reduced(args.target_price, actual_price):
+    page_title, price = scrap_element(args.url, args.xpath)
+    price_as_float = convert_string_to_float(price, args.locale)
+    if is_price_reduced(args.target_price, price_as_float):
         print('Price lower than target price')
         msg = (
             f'The price of the item {page_title} '
-            f'has gone down to {actual_price}'
+            f'has gone down to {price}'
         )
         plyer.notification.notify(
             title='A price has been reduced',
@@ -92,7 +88,9 @@ def main():
         print('Price higher than target price')
 
 
-def convert_string_to_float(str: str, locale_setting: str = DEFAULT_LOCALE) -> float:
+def convert_string_to_float(
+        str: str,
+        locale_setting: str) -> float:
     """
     Given a price like string, convert to float
 
@@ -141,7 +139,7 @@ def scrap_element(url: str, xpath: str) -> tuple[str, float]:
 
     scrapper.close()
 
-    return (title, convert_string_to_float(price))
+    return (title, price)
 
 
 def is_price_reduced(target_price: float, actual_price: float) -> bool:
