@@ -36,6 +36,40 @@ Install all required modules by:
 pip install -r requirements.txt
 ```
 
+#### Problems during installation
+
+On Ubuntu or MacOS it is possible to encounter a problem related to pkg-config during installation of dbus-python on pip:
+
+````
+configure: error: The pkg-config script could not be found or is too old.  Make sure it
+      is in your PATH or set the PKG_CONFIG environment variable to the full
+      path to pkg-config.
+      
+      Alternatively, you may set the environment variables DBUS_CFLAGS
+      and DBUS_LIBS to avoid the need to call pkg-config.
+      See the pkg-config man page for more details.
+````
+
+To solve this problem, it is necessary to install system packages using apt on Linux or brew on MacOS:
+
+On Linux:
+
+```
+apt install pkg-config build-essential libpython3-dev libdbus-1-dev
+```
+
+On MacOS:
+
+```
+brew install pkg-config dbus glib
+````
+
+then install dbus-python again using pip to install it successfuly:
+
+```
+pip install dbus-python
+```
+
 ### Usage
 
 ```
