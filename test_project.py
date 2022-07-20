@@ -1,13 +1,8 @@
 import pytest
 from project import (
-    scrap_element,
     convert_string_to_float,
     is_price_reduced
 )
-
-
-def test_scrapper_class():
-    pass
 
 
 def test_convert_string_to_float():
@@ -35,7 +30,7 @@ def test_convert_string_to_float():
         convert_string_to_float('...,,,', 'en_US.UTF-8')
 
 
-def test_is_reduced():
+def test_is_price_reduced():
     assert is_price_reduced(1200, 1200) is False
     assert is_price_reduced(1300, 1200)
     assert is_price_reduced(1199, 1200) is False

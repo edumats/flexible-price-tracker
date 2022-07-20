@@ -4,19 +4,19 @@
 
 ### Description:
 
-E-commerce websites have different HTML structures that make scrapping prices a case by case task. Some websites might have a specific id atribute for prices, others makes finding the price difficult, by using class attributes that change over time or refers to other prices that are present in the page (from related products, for example).
+E-commerce websites have different HTML structures that make scrapping prices a case by case task. Some websites might have a specific id atribute for prices, others makes finding the price difficult, by using only class attributes that change over time or refers to other prices that are present in the page (from related products, for example).
 
- This price scrapper can be used in most of e-commerce websites by requiring the user to provide a [X-Path](https://www.w3schools.com/xml/xpath_intro.asp) of the element that contains the price.
+ This price scrapper can be used with most of e-commerce websites by requiring the user to provide a [X-Path](https://www.w3schools.com/xml/xpath_intro.asp) of the element that contains the price. X-Path is similar to a path to a folder or file inside a file directory. As long as the path to a element does not change, the element containing the price can be retrieved.
 
  This scrapper does not include a scheduler to run every X hours or Y days, so please use [Cron](https://en.wikipedia.org/wiki/Cron) if using Linux or MacOS, [Task Scheduler](https://en.wikipedia.org/wiki/Windows_Task_Scheduler) if using Windows.
 
 #### Notifications
 
-By using the provided target price, the scrapper can send a notification to the user's desktop if the price found by scrapper is equal or less than the target price. 
+The scrapper can send a notification to the user's desktop if the price found by scrapper is equal or less than the target price. 
 
 #### Price formats in various countries
 
-Different countries uses different currency formats:
+Different countries uses different currency formats. For example:
 
 | Currency Name        | Currency Code | Format(s)        | Output       |
 |----------------------|---------------|------------------|--------------|
@@ -24,9 +24,7 @@ Different countries uses different currency formats:
 | Brazilian Real       | BRL           | R$ ###.###.###,## | R$123.000,50 |
 | Japanese Yen         | JPY           | ¥ ###,###,###    | ¥ 123,000,050    |
 
-In order to correctly extract the price from shops that uses different formats and compare with the target price, the scraper also needs a location setting. By default, it is set to **en_US.UTF-8**, which formats prices according the format used in United States. If you are using the scrapper to check prices in other formats, it is essential to change the locales setting to get correct values.
-
-See [list of available locales](#list-of-locales)
+In order to correctly extract the price from shops that uses different formats and compare with the target price, the scraper also needs a location setting. By default, it is set to **en_US.UTF-8**, which formats prices according the format used in United States. If you are using the scrapper to check prices in other formats, it is essential to provide the locale in the arguments to get correct values. See [Usage](#usage) and [list of available locales](#list-of-locales) for more details.
 
 ### Instalation
 
@@ -38,7 +36,7 @@ pip install -r requirements.txt
 
 #### Problems during installation
 
-On Ubuntu or MacOS it is possible to encounter a problem related to pkg-config during installation of dbus-python on pip:
+It is possible to encounter a problem related to pkg-config during installation of dbus-python on pip:
 
 ````
 configure: error: The pkg-config script could not be found or is too old.  Make sure it
@@ -88,7 +86,8 @@ python3 project.py <url> <xpath> <target_price>
 | -h, --help        | show this help message and exit     |
 | -l, --locale      | Set the locale for price formatting |
 
-It is advised to ru
+**Important**: Notifications will not appear if user's computer is set on "Do not disturb" mode. Please deactivate this mode if desktop notifications are desired.
+
 ### How to get the price element's X-Path
 
 #### In Chrome:
@@ -96,6 +95,24 @@ It is advised to ru
 1. Right click "inspect" on the item you are trying to find the xpath
 1. Right click on the highlighted area on the console.
 1. Select Copy xpath
+
+### File contents
+
+#### project.py
+
+Contains:
+
+Scrapper class: uses Selenium functions
+
+Functions:
+
+convert_string_to_float: Given a price like string, considers locale for correctly converting to float
+
+is_price_reduced: Given a price and a target price, checks if price is equal or less than target price
+
+#### test_project.py
+
+Contains pytest tests for each of the functions contained in project.py.
 
 ### List of locales
 

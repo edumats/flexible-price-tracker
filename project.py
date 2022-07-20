@@ -2,6 +2,7 @@ import argparse
 import locale
 import re
 import sys
+import time
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -10,6 +11,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 import plyer
+import schedule
 
 # Configuration for parser
 parser = argparse.ArgumentParser(
@@ -17,7 +19,8 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument(
     'url',
-    type=str, help='URL to be scrapped'
+    type=str,
+    help='URL to be scrapped'
 )
 parser.add_argument(
     'xpath',
@@ -71,17 +74,35 @@ class Scrapper:
 
 
 def main():
+    schedule.every().hour
+
+
+    
+
+
+def scrap_page():
+    ''' Scraps page '''
+
+    # Get parser args
     args = parser.parse_args()
-    page_title, price = scrap_element(args.url, args.xpath)
+
+    # Initialize Scrapper object and get page's title and price
+    scrapper = Scrapper()
+    scrapper.get_url(args.url)
+    page_title = scrapper.driver.title
+    price = scrapper.find_element_text(args.xpath)
+
+    # Convert extracted price to a float
     price_as_float = convert_string_to_float(price, args.locale)
+
+    # Compare extracted float with target price
     if is_price_reduced(args.target_price, price_as_float):
-        print('Price lower than target price')
         msg = (
             f'The price of the item {page_title} '
             f'has gone down to {price}'
         )
         plyer.notification.notify(
-            title='A price has been reduced',
+            title='Price reduced to {price}',
             message=msg,
         )
     else:
@@ -94,8 +115,7 @@ def convert_string_to_float(
     """
     Given a price like string, convert to float
 
-
-    Considers locale when converting price like string, defaults to en_US
+    Considers locale when converting price like string
     """
 
     # If all character are digits, just return as float
@@ -122,28 +142,8 @@ def convert_string_to_float(
     return float(result_value)
 
 
-def scrap_element(url: str, xpath: str) -> tuple[str, float]:
-    """ Returns tuple (page's title, X-Path's target element's inner html) """
-
-    # Initialize a Scrapper object
-    scrapper = Scrapper()
-
-    # Gets url
-    scrapper.get_url(url)
-
-    # Find element in url using X-Path
-    price = scrapper.find_element_text(xpath)
-
-    # Gets url's title
-    title = scrapper.driver.title
-
-    scrapper.close()
-
-    return (title, price)
-
-
 def is_price_reduced(target_price: float, actual_price: float) -> bool:
-    """Returns True if target price is less than target, False otherwise"""
+    """ Returns True if target price is less than target, False otherwise """
     if actual_price < target_price:
         return True
     return False
