@@ -1,5 +1,6 @@
 import argparse
 import locale
+from multiprocessing.sharedctypes import Value
 import re
 import sys
 import time
@@ -15,7 +16,7 @@ import schedule
 
 # Configuration for parser
 parser = argparse.ArgumentParser(
-    description='Watch prices on e-commerce websites'
+    description='Check prices on e-commerce websites'
 )
 parser.add_argument(
     'url',
@@ -39,64 +40,57 @@ parser.add_argument(
     default='en_US.UTF-8',
     help='Specify a locale for correctly formatting price'
 )
-
-
-class Scrapper:
-    def __init__(self):
-        options = Options()
-        # Set to eager to wait for DOM, but images may be still loading
-        options.page_load_strategy = 'eager'
-
-        # Does not require browser driver to be downloaded beforehand
-        service = ChromeService(
-            executable_path=ChromeDriverManager().install()
-        )
-
-        # Creates instance of Chrome webdriver
-        self.driver = webdriver.Chrome(service=service, options=options)
-
-    def get_url(self, url: str) -> None:
-        """ Navigate to provided url """
-        self.driver.get(url)
-
-    def find_element_text(self, xpath: str) -> str:
-        """ Given a X-Path to a element, return inner text of the element """
-        try:
-            element_text = self.driver.find_element(By.XPATH, xpath).text
-        except NoSuchElementException:
-            sys.exit("Error: Couldn't find element by provided X-Path")
-
-        return element_text
-
-    def close(self):
-        """ Closes the webdriver """
-        self.driver.close()
-
+parser.add_argument(
+    '-t',
+    '--time',
+    type=str,
+    help='Time between each price check'
+)
 
 def main():
-    schedule.every().hour
-
-
-    
-
-
-def scrap_page():
-    ''' Scraps page '''
-
     # Get parser args
     args = parser.parse_args()
+    # If time argument is present, schedule the job
+    if args.time:
+        time_unit, interval = extract_time(args.time)
+
+        if time_unit == 'm':
+            schedule.every(interval).minutes.do(scrap_page)
+        elif time_unit == 'h':
+            schedule.every(interval).hours.do(scrap_page)
+        elif time_unit == 'd':
+            schedule.every(interval).days.do(scrap_page)
+        
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+    else:
+        # If no time argument, just run once
+        pass
+
+def extract_time(time_str: str) -> tuple[str, str]:
+    """ Given a letter and number string, validate and return as tuple """
+
+    if time_str[0] in {'m', 'h', 'd'} and time_str[1].isdigit():
+        return (time_str[0], time_str[1])
+    else:
+        raise ValueError(
+            'Time value does not start with s, m, h or d, followed by digit'
+        )
+
+def scrap_page(url, xpath, locale, target_price):
+    ''' Gets contents of xpath element '''
 
     # Initialize Scrapper object and get page's title and price
-    scrapper = Scrapper()
-    scrapper.get_url(args.url)
+    scrapper = Scrapper(url)
     page_title = scrapper.driver.title
-    price = scrapper.find_element_text(args.xpath)
+    price = scrapper.find_element_text(xpath)
 
     # Convert extracted price to a float
-    price_as_float = convert_string_to_float(price, args.locale)
+    price_as_float = convert_string_to_float(price, locale)
 
     # Compare extracted float with target price
-    if is_price_reduced(args.target_price, price_as_float):
+    if is_price_reduced(target_price, price_as_float):
         msg = (
             f'The price of the item {page_title} '
             f'has gone down to {price}'
@@ -108,6 +102,8 @@ def scrap_page():
     else:
         print('Price higher than target price')
 
+def send_notification():
+    pass
 
 def convert_string_to_float(
         str: str,
@@ -148,6 +144,36 @@ def is_price_reduced(target_price: float, actual_price: float) -> bool:
         return True
     return False
 
+
+# Contains methods related to scrapping
+class Scrapper:
+    def __init__(self, url: str) -> None:
+        options = Options()
+        # Set to eager to wait for DOM, but images may be still loading
+        options.page_load_strategy = 'eager'
+
+        # Does not require browser driver to be downloaded beforehand
+        service = ChromeService(
+            executable_path=ChromeDriverManager().install()
+        )
+
+        # Creates instance of Chrome webdriver
+        self.driver = webdriver.Chrome(service=service, options=options)
+        # Navigate to provided url
+        self.driver.get(url)
+
+    def find_element_text(self, xpath: str) -> str:
+        """ Given a X-Path to a element, return inner text of the element """
+        try:
+            element_text = self.driver.find_element(By.XPATH, xpath).text
+        except NoSuchElementException:
+            sys.exit("Error: Couldn't find an element using provided X-Path")
+
+        return element_text
+
+    def close(self):
+        """ Closes the webdriver """
+        self.driver.close()
 
 if __name__ == '__main__':
     main()
