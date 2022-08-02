@@ -24,6 +24,10 @@ def test_convert_string_to_float():
     assert convert_string_to_float(
         '$ 45.35 - $ 75.46',
         'en_US.UTF-8') == float('45.35')
+    assert convert_string_to_float(
+        '3.490',
+        'pt_BR.UTF-8') == float('3490.00')
+
     with pytest.raises(ValueError):
         convert_string_to_float('abc', 'en_US.UTF-8')
     with pytest.raises(SystemExit):

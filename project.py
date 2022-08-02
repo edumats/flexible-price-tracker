@@ -1,6 +1,5 @@
 import argparse
 import locale
-from multiprocessing.sharedctypes import Value
 import re
 import sys
 import time
@@ -30,7 +29,7 @@ parser.add_argument(
 )
 parser.add_argument(
     'target_price',
-    type=float,
+    type=str,
     help='Target price to activate a notification'
 )
 parser.add_argument(
@@ -47,26 +46,34 @@ parser.add_argument(
     help='Time between each price check'
 )
 
+args = parser.parse_args()
+
+
 def main():
     # Get parser args
-    args = parser.parse_args()
+    # args = parser.parse_args()
+    target_as_float = convert_string_to_float(args.target_price, args.locale)
     # If time argument is present, schedule the job
     if args.time:
         time_unit, interval = extract_time(args.time)
 
-        if time_unit == 'm':
-            schedule.every(interval).minutes.do(scrap_page)
-        elif time_unit == 'h':
-            schedule.every(interval).hours.do(scrap_page)
-        elif time_unit == 'd':
-            schedule.every(interval).days.do(scrap_page)
-        
+        schedule_options = {
+            'm': schedule.every(interval).minutes.do(scrap_page, url=args.url),
+            'h': schedule.every(interval).hours.do(scrap_page),
+            'd': schedule.every(interval).days.do(scrap_page)
+        }
+
+        # Run schedule function
+        schedule_options[time_unit]()
+
         while True:
+            # Run pending schedules
             schedule.run_pending()
             time.sleep(1)
     else:
         # If no time argument, just run once
-        pass
+        scrap_page(args.url, args.xpath, args.locale, target_as_float)
+
 
 def extract_time(time_str: str) -> tuple[str, str]:
     """ Given a letter and number string, validate and return as tuple """
@@ -78,7 +85,8 @@ def extract_time(time_str: str) -> tuple[str, str]:
             'Time value does not start with s, m, h or d, followed by digit'
         )
 
-def scrap_page(url, xpath, locale, target_price):
+
+def scrap_page(url, xpath, locale_setting, target_price):
     ''' Gets contents of xpath element '''
 
     # Initialize Scrapper object and get page's title and price
@@ -87,23 +95,26 @@ def scrap_page(url, xpath, locale, target_price):
     price = scrapper.find_element_text(xpath)
 
     # Convert extracted price to a float
-    price_as_float = convert_string_to_float(price, locale)
+    actual_price = convert_string_to_float(price, locale_setting)
 
-    # Compare extracted float with target price
-    if is_price_reduced(target_price, price_as_float):
+    # Compare extracted price with target price
+    if actual_price <= target_price:
         msg = (
             f'The price of the item {page_title} '
-            f'has gone down to {price}'
+            f'has gone down to {locale.currency(actual_price)}'
         )
         plyer.notification.notify(
-            title='Price reduced to {price}',
+            title=f'Price reduced to {locale.currency(actual_price)}',
             message=msg,
         )
     else:
-        print('Price higher than target price')
+        print(f'Current price of {locale.currency(actual_price)} is higher '
+              f'than target price of {locale.currency(target_price)}')
+
 
 def send_notification():
     pass
+
 
 def convert_string_to_float(
         str: str,
@@ -138,13 +149,6 @@ def convert_string_to_float(
     return float(result_value)
 
 
-def is_price_reduced(target_price: float, actual_price: float) -> bool:
-    """ Returns True if target price is less than target, False otherwise """
-    if actual_price < target_price:
-        return True
-    return False
-
-
 # Contains methods related to scrapping
 class Scrapper:
     def __init__(self, url: str) -> None:
@@ -174,6 +178,7 @@ class Scrapper:
     def close(self):
         """ Closes the webdriver """
         self.driver.close()
+
 
 if __name__ == '__main__':
     main()
