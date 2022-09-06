@@ -4,15 +4,15 @@
 
 ### Description:
 
-E-commerce websites have different HTML structures that make scrapping prices a case by case task. Some websites might have a specific id atribute for prices, others makes finding the price difficult, by using only class attributes that change over time or refers to other prices that are present in the page (from related products, for example).
+E-commerce websites have different HTML structures that make scrapping prices a case by case task. Some websites might have a specific id atribute for prices, others makes finding the price difficult by using only class attributes that change over time or refers to other prices that are present in the page (from related products, for example).
 
  This price scrapper can be used with most of e-commerce websites by requiring the user to provide a [X-Path](https://www.w3schools.com/xml/xpath_intro.asp) of the element that contains the price. X-Path is similar to a path to a folder or file inside a file directory. As long as the path to a element does not change, the element containing the price can be retrieved.
 
- This scrapper does not include a scheduler to run every X hours or Y days, so please use [Cron](https://en.wikipedia.org/wiki/Cron) if using Linux or MacOS, [Task Scheduler](https://en.wikipedia.org/wiki/Windows_Task_Scheduler) if using Windows.
+ This scrapper include a scheduler to run every X hours or Y days and it is also possible to use OS specific schedulers like [Cron](https://en.wikipedia.org/wiki/Cron) if using Linux or MacOS, [Task Scheduler](https://en.wikipedia.org/wiki/Windows_Task_Scheduler) if using Windows.
 
 #### Notifications
 
-The scrapper can send a notification to the user's desktop if the price found by scrapper is equal or less than the target price. 
+The scrapper will send a notification to the user's desktop each time it is run, telling the user if the price is below or higher the target price. 
 
 #### Price formats in various countries
 
@@ -89,6 +89,8 @@ python3 project.py <url> <xpath> <target_price>
 **Important**: Notifications will not appear if user's computer is set on "Do not disturb" mode. Please deactivate this mode if desktop notifications are desired.
 
 ### How to get the price element's X-Path
+
+The X-Path can be obtained by using the browser's developer's tools. Specifics will vary form browser to browser, but the process is usually similar.
 
 #### In Chrome:
 

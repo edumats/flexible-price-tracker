@@ -7,7 +7,7 @@ import time
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
+import selenium.webdriver.chrome.options
 from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 import plyer
@@ -46,17 +46,16 @@ parser.add_argument(
     help='Time between each price check'
 )
 
-args = parser.parse_args()
-
 
 def main():
-    # Get parser args
-    # args = parser.parse_args()
+    # Convert price from string to float formatted according to locale setting
     target_as_float = convert_string_to_float(args.target_price, args.locale)
     # If time argument is present, schedule the job
     if args.time:
         time_unit, interval = extract_time(args.time)
 
+        # Schedule according to time interval requested by user
+        # Incomplete
         schedule_options = {
             'm': schedule.every(interval).minutes.do(scrap_page, url=args.url),
             'h': schedule.every(interval).hours.do(scrap_page),
@@ -87,42 +86,54 @@ def extract_time(time_str: str) -> tuple[str, str]:
 
 
 def scrap_page(url, xpath, locale_setting, target_price):
-    ''' Gets contents of xpath element '''
+    """ Gets contents of xpath element """
 
-    # Initialize Scrapper object and get page's title and price
-    scrapper = Scrapper(url)
-    page_title = scrapper.driver.title
-    price = scrapper.find_element_text(xpath)
+    driver = create_scrapper(url)
+
+    # Go to url
+    driver.get(url)
+    page_title = driver.title
+
+    try:
+        price = driver.find_element(By.XPATH, xpath).text
+    except NoSuchElementException:
+        sys.exit("Error: Couldn't find an element using provided X-Path")
 
     # Convert extracted price to a float
     actual_price = convert_string_to_float(price, locale_setting)
 
-    # Compare extracted price with target price
-    if actual_price <= target_price:
-        msg = (
-            f'The price of the item {page_title} '
-            f'has gone down to {locale.currency(actual_price)}'
-        )
-        plyer.notification.notify(
-            title=f'Price reduced to {locale.currency(actual_price)}',
-            message=msg,
+    message = create_message(actual_price, target_price, page_title)
+
+    print(message)
+
+    plyer.notification.notify(
+        message
+    )
+
+
+def create_message(
+        current_price: float,
+        target_price: float,
+        item_name: str) -> str:
+    """ Returns a message related to changes in price """
+
+    if current_price <= target_price:
+        return (
+            f'The price of {item_name} '
+            f'has gone down to {locale.currency(current_price)}'
         )
     else:
-        print(f'Current price of {locale.currency(actual_price)} is higher '
-              f'than target price of {locale.currency(target_price)}')
-
-
-def send_notification():
-    pass
+        return (
+            f'Current price of {locale.currency(current_price)} is higher '
+            f'than target price of {locale.currency(target_price)}'
+        )
 
 
 def convert_string_to_float(
         str: str,
         locale_setting: str) -> float:
     """
-    Given a price like string, convert to float
-
-    Considers locale when converting price like string
+    Given a price like string, convert to float considering provided locale
     """
 
     # If all character are digits, just return as float
@@ -149,36 +160,21 @@ def convert_string_to_float(
     return float(result_value)
 
 
-# Contains methods related to scrapping
-class Scrapper:
-    def __init__(self, url: str) -> None:
-        options = Options()
-        # Set to eager to wait for DOM, but images may be still loading
-        options.page_load_strategy = 'eager'
+def create_scrapper(url: str) -> webdriver.Chrome:
+    """ Returns a webdriver object """
 
-        # Does not require browser driver to be downloaded beforehand
-        service = ChromeService(
-            executable_path=ChromeDriverManager().install()
-        )
+    # Set to eager to wait for DOM, but images may be still loading
+    options = selenium.webdriver.chrome.options.Options()
+    options.page_load_strategy = 'eager'
 
-        # Creates instance of Chrome webdriver
-        self.driver = webdriver.Chrome(service=service, options=options)
-        # Navigate to provided url
-        self.driver.get(url)
-
-    def find_element_text(self, xpath: str) -> str:
-        """ Given a X-Path to a element, return inner text of the element """
-        try:
-            element_text = self.driver.find_element(By.XPATH, xpath).text
-        except NoSuchElementException:
-            sys.exit("Error: Couldn't find an element using provided X-Path")
-
-        return element_text
-
-    def close(self):
-        """ Closes the webdriver """
-        self.driver.close()
+    # For avoiding the need for browser driver to be downloaded beforehand
+    service = ChromeService(
+        executable_path=ChromeDriverManager().install()
+    )
+    return webdriver.Chrome(service=service, options=options)
 
 
 if __name__ == '__main__':
+    # Get parser arguments
+    args = parser.parse_args()
     main()
