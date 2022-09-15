@@ -33,10 +33,8 @@ parser.add_argument(
     help='Target price to activate a notification'
 )
 parser.add_argument(
-    '-l',
-    '--locale',
+    'locale',
     type=str,
-    default='en_US.UTF-8',
     help='Specify a locale for correctly formatting price'
 )
 parser.add_argument(
@@ -48,90 +46,98 @@ parser.add_argument(
 
 
 def main():
-    # Convert price from string to float formatted according to locale setting
-    target_as_float = convert_string_to_float(args.target_price, args.locale)
-    # If time argument is present, schedule the job
-    if args.time:
-        time_unit, interval = extract_time(args.time)
+    # Create Chrome driver instance
+    driver = create_scrapper()
 
-        # Schedule according to time interval requested by user
-        # Incomplete
-        schedule_options = {
-            'm': schedule.every(interval).minutes.do(scrap_page, url=args.url),
-            'h': schedule.every(interval).hours.do(scrap_page),
-            'd': schedule.every(interval).days.do(scrap_page)
-        }
+    # Get string for actual price and page's title
+    actual_price_string, page_title = scrap_page(args.url, args.xpath, driver)
 
-        # Run schedule function
-        schedule_options[time_unit]()
+    # Sets the locale
+    locale.setlocale(locale.LC_ALL, args.locale)
 
-        while True:
-            # Run pending schedules
-            schedule.run_pending()
-            time.sleep(1)
-    else:
-        # If no time argument, just run once
-        scrap_page(args.url, args.xpath, args.locale, target_as_float)
+    # Convert prices from string to float, considering locale
+    target_price = convert_string_to_float(args.target_price)
+    actual_price_float = convert_string_to_float(actual_price_string)
+
+    # Creates a message comparing actual price and target price
+    title, message = create_message(
+        actual_price_float,
+        target_price,
+        page_title
+    )
+
+    print(message)
+
+    # Send message to user's desktop notifications
+    plyer.notification.notify(
+        title=title,
+        message=message
+    )
 
 
-def extract_time(time_str: str) -> tuple[str, str]:
-    """ Given a letter and number string, validate and return as tuple """
+def extract_time(time_str: str) -> tuple[str, int]:
+    """ Given a letter and number string, validate and return it as tuple """
 
-    if time_str[0] in {'m', 'h', 'd'} and time_str[1].isdigit():
-        return (time_str[0], time_str[1])
+    if time_str[0] in {'m', 'h', 'd'} and time_str[1:].isdigit():
+        return (time_str[0], int(time_str[1:]))
     else:
         raise ValueError(
             'Time value does not start with s, m, h or d, followed by digit'
         )
 
 
-def scrap_page(url, xpath, locale_setting, target_price):
-    """ Gets contents of xpath element """
-
-    driver = create_scrapper(url)
+def scrap_page(url: str,
+               xpath: str,
+               driver: webdriver.Chrome) -> tuple[str, str]:
+    """ Returns tuple of contents of xpath element and page's title """
 
     # Go to url
     driver.get(url)
+
+    # Get page title
     page_title = driver.title
 
     try:
-        price = driver.find_element(By.XPATH, xpath).text
+        # Get target element contents
+        contents = driver.find_element(By.XPATH, xpath).text
     except NoSuchElementException:
         sys.exit("Error: Couldn't find an element using provided X-Path")
 
-    # Convert extracted price to a float
-    actual_price = convert_string_to_float(price, locale_setting)
+    # Exit browser
+    driver.close()
 
-    message = create_message(actual_price, target_price, page_title)
-
-    print(message)
-
-    plyer.notification.notify(
-        message
-    )
+    return (contents, page_title)
 
 
 def create_message(
         current_price: float,
         target_price: float,
-        item_name: str) -> str:
-    """ Returns a message related to changes in price """
+        item_name: str) -> tuple[str, str]:
+    """ Returns a title and message according to price difference """
+
+    symbol = locale.localeconv()['currency_symbol']
+    target_value = locale.currency(target_price, symbol=False)
+    current_price_value = locale.currency(current_price, symbol=False)
 
     if current_price <= target_price:
+        """
+        Monetary value and currency symbol are separated to avoid inconsistent
+        currency symbol placement, such as 100 R$ (MacOS) or R$ 100 (Ubuntu)
+        """
+
         return (
-            f'The price of {item_name} '
-            f'has gone down to {locale.currency(current_price)}'
+            f'Price down to {symbol}{current_price_value}',
+            f'Low price alert of {item_name}'
         )
     else:
         return (
-            f'Current price of {locale.currency(current_price)} is higher '
-            f'than target price of {locale.currency(target_price)}'
+            'Price higher than target price',
+            f'Current price of {symbol}{current_price_value} is higher '
+            f'than target price of {symbol}{target_value}'
         )
 
 
-def convert_string_to_float(
-        str: str,
-        locale_setting: str) -> float:
+def convert_string_to_float(str: str) -> float:
     """
     Given a price like string, convert to float considering provided locale
     """
@@ -148,10 +154,7 @@ def convert_string_to_float(
             'Provided string has no digits to be converted to float'
         )
 
-    # Sets the locale
-    locale.setlocale(locale.LC_ALL, locale_setting)
-
-    # Converts string according to provided locale or by the default en_US
+    # Converts string according to provided locale
     try:
         result_value = locale.atof(match.group(1))
     except ValueError:
@@ -160,8 +163,8 @@ def convert_string_to_float(
     return float(result_value)
 
 
-def create_scrapper(url: str) -> webdriver.Chrome:
-    """ Returns a webdriver object """
+def create_scrapper() -> webdriver.Chrome:
+    """ Returns a Chrome webdriver object """
 
     # Set to eager to wait for DOM, but images may be still loading
     options = selenium.webdriver.chrome.options.Options()
@@ -171,10 +174,33 @@ def create_scrapper(url: str) -> webdriver.Chrome:
     service = ChromeService(
         executable_path=ChromeDriverManager().install()
     )
+
     return webdriver.Chrome(service=service, options=options)
 
 
 if __name__ == '__main__':
     # Get parser arguments
     args = parser.parse_args()
-    main()
+
+    # If time argument is present, schedule the job
+    if args.time:
+        # Validate and get time unit and interval from command argument
+        time_unit, interval = extract_time(args.time)
+
+        # Schedule according to time interval requested by user
+        schedule_options = {
+            'm': schedule.every(interval).minutes.do(main),
+            'h': schedule.every(interval).hours.do(main),
+            'd': schedule.every(interval).days.do(main)
+        }
+
+        # Run schedule function
+        schedule_options[time_unit]
+
+        while True:
+            # Run pending schedules
+            schedule.run_pending()
+            time.sleep(1)
+    else:
+        # If no time argument in command arguments, just run once
+        main()

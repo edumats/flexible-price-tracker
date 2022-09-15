@@ -4,15 +4,15 @@
 
 ### Description:
 
-E-commerce websites have different HTML structures that make scrapping prices a case by case task. Some websites might have a specific id atribute for prices, others makes finding the price difficult by using only class attributes that change over time or refers to other prices that are present in the page (from related products, for example).
+E-commerce websites have different HTML structures that make scrapping prices a case by case task. Some websites might have a specific id atribute for the product's price, but others makes finding the price difficult by using only class attributes that change over time or refers to other prices that are present in the page (from related products, for example).
 
  This price scrapper can be used with most of e-commerce websites by requiring the user to provide a [X-Path](https://www.w3schools.com/xml/xpath_intro.asp) of the element that contains the price. X-Path is similar to a path to a folder or file inside a file directory. As long as the path to a element does not change, the element containing the price can be retrieved.
 
- This scrapper include a scheduler to run every X hours or Y days and it is also possible to use OS specific schedulers like [Cron](https://en.wikipedia.org/wiki/Cron) if using Linux or MacOS, [Task Scheduler](https://en.wikipedia.org/wiki/Windows_Task_Scheduler) if using Windows.
+ This scrapper can be run only once or run every X hours, minutes or days, using the --time argument. As an alternative, it is also possible to use OS specific schedulers like [Cron](https://en.wikipedia.org/wiki/Cron) if using Linux or MacOS, [Task Scheduler](https://en.wikipedia.org/wiki/Windows_Task_Scheduler) if using Windows.
 
 #### Notifications
 
-The scrapper will send a notification to the user's desktop each time it is run, telling the user if the price is below or higher the target price. 
+The scrapper will send a notification to the user's desktop if the price of the product is lower than the target price set by the user.
 
 #### Price formats in various countries
 
@@ -24,7 +24,7 @@ Different countries uses different currency formats. For example:
 | Brazilian Real       | BRL           | R$ ###.###.###,## | R$123.000,50 |
 | Japanese Yen         | JPY           | ¥ ###,###,###    | ¥ 123,000,050    |
 
-In order to correctly extract the price from shops that uses different formats and compare with the target price, the scraper also needs a location setting. By default, it is set to **en_US.UTF-8**, which formats prices according the format used in United States. If you are using the scrapper to check prices in other formats, it is essential to provide the locale in the arguments to get correct values. See [Usage](#usage) and [list of available locales](#list-of-locales) for more details.
+In order to correctly extract the price from shops that uses different formats and compare with the target price, the scraper also needs a location setting. It is required to provide the locale in the arguments in order to run the scrapper. See [Usage](#usage) and [list of available locales](#list-of-locales) for more details.
 
 ### Instalation
 
@@ -71,7 +71,7 @@ pip install dbus-python
 ### Usage
 
 ```
-python3 project.py <url> <xpath> <target_price>
+python3 project.py <url> <xpath> <target_price> <locale>
 ```
 
 
@@ -80,11 +80,37 @@ python3 project.py <url> <xpath> <target_price>
 | url               | URL to be scrapped                                      |
 | xpath             | X-Path of the element that contains the product's price |
 | target_price      | Target price to activate a notification                 |
+| locale            | Locale setting in order to correctly convert price      |
 
 | Optional argument | Description                         |
 |-------------------|-------------------------------------|
 | -h, --help        | show this help message and exit     |
-| -l, --locale      | Set the locale for price formatting |
+| -t, --time        | Run between X time itervals         |
+
+### Using scheduling
+
+Use the -t or --time argument to run between available intervals. 
+Available itervals are:
+
+| Option | Description         |
+|--------|---------------------|
+| m      | Run every X minutes |
+| h      | Run every X hours   |
+| d      | Run every X days    |
+
+For example:
+
+python3 project.py www.shop.com //*[@id="price"] 49 en_US.UTF-8 **--time m10**
+
+It will run the scrapper once every 10 minutes
+
+python3 project.py www.shop.com //*[@id="price"] 49 en_US.UTF-8 **--time h2**
+
+It will run the scrapper once every 2 hours
+
+python3 project.py www.shop.com //*[@id="price"] 49 en_US.UTF-8 **--time d1**
+
+It will run the scrapper once every day
 
 **Important**: Notifications will not appear if user's computer is set on "Do not disturb" mode. Please deactivate this mode if desktop notifications are desired.
 
@@ -94,9 +120,15 @@ The X-Path can be obtained by using the browser's developer's tools. Specifics w
 
 #### In Chrome:
 
-1. Right click "inspect" on the item you are trying to find the xpath
-1. Right click on the highlighted area on the console.
-1. Select Copy xpath
+1. Right click "Inspect" on the item you want to find the xpath
+1. Right click on the highlighted element in Devtools
+1. Select Copy > Copy XPath
+
+#### In Firefox:
+
+1. Right click "Inspect" on the item you want to find the xpath
+1. Right click on the highlighted element in Devtools
+1. Select Copy > XPath
 
 ### File contents
 
@@ -104,19 +136,28 @@ The X-Path can be obtained by using the browser's developer's tools. Specifics w
 
 Contains:
 
-Scrapper class: uses Selenium functions
 
 Functions:
 
+extract_time: Used for the scheduling feature, validates schedule input
+
+scrap_page: Given an url, XPath and driver, returns the target element's contents
+
 convert_string_to_float: Given a price like string, considers locale for correctly converting to float
 
-is_price_reduced: Given a price and a target price, checks if price is equal or less than target price
+create_message: Given a price and a target price, generates appropriate message for user
 
 #### test_project.py
 
-Contains pytest tests for each of the functions contained in project.py.
+Contains tests for each of the functions contained in project.py.
+
+#### requirements.txt
+
+Contains all dependecies for the project.
 
 ### List of locales
+
+Use the list below to get the appropriate locale:
 
 | Locale             | Description                              |
 |--------------------|------------------------------------------|
