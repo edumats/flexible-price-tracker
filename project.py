@@ -232,10 +232,11 @@ def create_message(
 
 
 class element_has_text(object):
-    def __init__(self, locator):
+    """ Custom class to check if HTML element has inner text or not """
+    def __init__(self, locator: tuple):
         self.locator = locator
 
-    def __call__(self, driver):
+    def __call__(self, driver: webdriver.Chrome):
         element = driver.find_element(*self.locator)
         if element.text:
             return element

@@ -10,7 +10,7 @@ from project import (
     create_message,
     create_scrapper,
     scrap_page,
-    extract_time
+    extract_time,
 )
 
 
