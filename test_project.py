@@ -98,6 +98,13 @@ def test_scrap_page():
         driver.find_element.side_effect = NoSuchElementException
         scrap_page(url, xpath, driver)
 
+    # Check if raises error if element is empty
+    with pytest.raises(SystemExit):
+        empty_mock = MockResponse()
+        empty_mock.text = ''
+        driver.find_element.return_value = empty_mock
+        scrap_page(url, xpath, driver)
+
 
 def test_extract_time():
     # Tests if returns expected values
