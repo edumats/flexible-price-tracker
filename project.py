@@ -137,10 +137,11 @@ def scrap_page(url: str,
     driver.get(url)
     # Get page title
     page_title = driver.title
-    driver.save_screenshot('result9.png')
+
     try:
         # Wait for target element to load its contents and get when available
-        contents = WebDriverWait(driver, 10).until(
+        wait_time = 3  # waits 3 seconds
+        contents = WebDriverWait(driver, wait_time).until(
             element_has_text((By.XPATH, xpath))
         ).text
         # contents = driver.find_element(By.XPATH, xpath).text
