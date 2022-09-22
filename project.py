@@ -45,6 +45,10 @@ parser.add_argument(
     type=str,
     help='Time between each price check'
 )
+parser.add_argument(
+    '--all-notifications',
+    action='store_true',
+)
 
 
 def main():
@@ -71,11 +75,18 @@ def main():
     print('[SCRAPPER]: ', title)
     print('[SCRAPPER]: ', message)
 
-    # Send message to user's desktop notifications
-    plyer.notification.notify(
-        title=title,
-        message=message
-    )
+    if args.all_notifications:
+        # Send message to user's desktop notifications
+        plyer.notification.notify(
+            title=title,
+            message=message
+        )
+    else:
+        if actual_price_float <= target_price:
+            plyer.notification.notify(
+                title=title,
+                message=message
+            )
 
 
 def create_scrapper() -> webdriver.Chrome:

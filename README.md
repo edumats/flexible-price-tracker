@@ -88,16 +88,20 @@ python3 project.py <url> <xpath> <target_price> <locale>
 | target_price      | Target price to activate a notification                 |
 | locale            | Locale setting in order to correctly convert price      |
 
-| Optional argument | Description                         |
-|-------------------|-------------------------------------|
-| -h, --help        | show help message and exit          |
-| -t, --time        | Run between X time itervals         |
+| Optional argument   | Description                                      |
+|---------------------|--------------------------------------------------|
+| -h, --help          | Show help message and exit                       |
+| -t, --time          | Run between X time itervals                      |
+| --all-notifications | Notify even if price is higher than target price |
 
+### **Important**
+
+It is common for urls and XPaths to have characters such as / (forward slash) or " (double quotes) that needs to be escaped to avoid unwanted behavior at the terminal shell. **Always use single quotes (') around the url and the XPath for the program to work correctly.**
 
 ### Using scheduling
 
 Use the -t or --time argument to run between available intervals. 
-Available itervals are:
+Available intervals are:
 
 | Option | Description         |
 |--------|---------------------|
@@ -108,22 +112,22 @@ Available itervals are:
 For example:
 
 ````
-python3 project.py www.shop.com //*[@id="price"] 49 en_US.UTF-8 --time m10
+python3 project.py 'www.shop.com' '//*[@id="price"]' 49 en_US.UTF-8 --time m10
 ````
 It will run the scrapper once every 10 minutes
 
 ````
-python3 project.py www.shop.com //*[@id="price"] 49 en_US.UTF-8 --time h2
+python3 project.py 'www.shop.com' '//*[@id="price"]' 49 en_US.UTF-8 --time h2
 ````
 It will run the scrapper once every 2 hours
 
 ````
-python3 project.py www.shop.com //*[@id="price"] 49 en_US.UTF-8 --time d1
+python3 project.py 'www.shop.com' '//*[@id="price"]' 49 en_US.UTF-8 --time d1
 ````
 
 It will run the scrapper once every day
 
-**Important**: Notifications will not appear if user's computer is set on "Do not disturb" mode. Please deactivate this mode if desktop notifications are desired.
+**Important**: Notifications will appear only when the actual price of product is equal or below the targetprice. They also will not appear if user's computer is set on "Do not disturb" mode. Please deactivate this mode if desktop notifications are desired.
 
 
 ### How to get the price element's X-Path
