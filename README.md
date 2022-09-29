@@ -1,7 +1,7 @@
 # Flexible Price Tracker
 
 
-### Video Demo: TODO
+### Video Demo: [https://youtu.be/uyPRBztBfuo](https://youtu.be/uyPRBztBfuo)
 
 
 ### Description:
@@ -80,7 +80,6 @@ pip install dbus-python
 python3 project.py <url> <xpath> <target_price> <locale>
 ```
 
-
 | Required argument | Description                                             |
 |-------------------|---------------------------------------------------------|
 | url               | URL to be scrapped                                      |
@@ -93,6 +92,7 @@ python3 project.py <url> <xpath> <target_price> <locale>
 | -h, --help          | Show help message and exit                       |
 | -t, --time          | Run between X time itervals                      |
 | --all-notifications | Notify even if price is higher than target price |
+| --headless          | Will not open browser window when scrapping      |
 
 ### **Important**
 

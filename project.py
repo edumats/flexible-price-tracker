@@ -48,6 +48,12 @@ parser.add_argument(
 parser.add_argument(
     '--all-notifications',
     action='store_true',
+    help='Notification will trigger even if price is higher than target price'
+)
+parser.add_argument(
+    '--headless',
+    action='store_true',
+    help='Activate broser headless mode'
 )
 
 
@@ -95,7 +101,8 @@ def create_scrapper() -> webdriver.Chrome:
     # Set to eager to wait for DOM, but images may be still loading
     options = selenium.webdriver.chrome.options.Options()
     # Headless option disabled due to automation detection in some pages
-    # options.headless = True
+    if args.headless:
+        options.headless = True
     user_agent = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit'
                   '/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36')
     # Avoids Chrome automation being detected
