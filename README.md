@@ -1,7 +1,7 @@
 # Flexible Price Tracker
 
 
-### Video Demo: [https://youtu.be/uyPRBztBfuo](https://youtu.be/uyPRBztBfuo)
+### Video Demo: [https://youtu.be/ONO6ficUjug](https://youtu.be/ONO6ficUjug)
 
 
 ### Description:
